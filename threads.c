@@ -4,6 +4,20 @@
 #include <pthread.h>
 
 int ***pixels;
+int height, width, maxValue, pixelColor;
+
+void printPixels(int ***pixels) {
+	fprintf(stdout, "P3\n");
+	fprintf(stdout, "%i %i\n", width, height);
+	fprintf(stdout, "%i\n", maxValue);
+	for (int i = 0; i < height; ++i) {
+		for (int j = 0; j < width; ++j) {
+			for (int k = 0; k < 3; ++k) {
+				fprintf(stdout, "%i ", pixels[i][j][k]);
+			}
+		}
+	}
+}
 
 int main (int argc, char **argv) {
 	if (argc < 3) {
@@ -39,8 +53,7 @@ int main (int argc, char **argv) {
 		exit(1);
 	}
 
-	int height, width, maxValue;
-	int pixelColor;
+	// int num_threads = atoi(argv[1]);
 
 	if (fscanf(stdin, "P3 %i%i%i", &width, &height, &maxValue) == -1) {
 		perror("WHY");
@@ -77,15 +90,137 @@ int main (int argc, char **argv) {
 		}
 	}
 
-	fprintf(stdout, "P3\n");
-	fprintf(stdout, "%i %i\n", width, height);
-	fprintf(stdout, "%i\n", maxValue);
-	for (int i = 0; i < height; ++i) {
-		for (int j = 0; j < width; ++j) {
-			for (int k = 0; k < 3; ++k) {
-				fprintf(stdout, "%i ", pixels[i][j][k]);
+	if (strcmp(argv[2], "-I") == 0) {
+		for (int i = 0; i < height; ++i) {
+			for (int j = 0; j < width; ++j) {
+				for (int k = 0; k < 3; ++k) {
+					pixels[i][j][k] = maxValue - pixels[i][j][k];
+				}
 			}
 		}
+		printPixels(pixels);
+	}
+	if (strcmp(argv[2], "-R") == 0) {
+		int ***rotatedPixels;
+
+		rotatedPixels = malloc(width * sizeof(int **));
+		if (rotatedPixels == NULL) {
+			perror("Malloc error");
+			exit(1);
+		}
+		for (int i = 0; i < width; ++i) {
+			rotatedPixels[i] = malloc(height * sizeof(int *));
+			if (rotatedPixels[i] == NULL) {
+				perror("Malloc error");
+			}
+			for (int j = 0; j < height; ++j) {
+				rotatedPixels[i][j] = malloc(sizeof(int));
+				if (rotatedPixels[i][j] == NULL) {
+					perror("Malloc error");
+				}
+			}
+		}
+
+		for (int i = 0; i < height; ++i) {
+			for (int j = 0; j < width; ++j) {
+				for (int k = 0; k < 3; ++k) {
+					rotatedPixels[j][height-i-1][k] = pixels[i][j][k];
+				}
+			}
+		}
+
+		fprintf(stdout, "P3\n");
+		fprintf(stdout, "%i %i\n", height, width);
+		fprintf(stdout, "%i\n", maxValue);
+		for (int i = 0; i < width; ++i) {
+			for (int j = 0; j < height; ++j) {
+				for (int k = 0; k < 3; ++k) {
+					fprintf(stdout, "%i ", rotatedPixels[i][j][k]);
+				}
+			}
+		}
+	}
+	if (strcmp(argv[2], "-L") == 0) {
+		int ***rotatedLeftPixels;
+
+		rotatedLeftPixels = malloc(width * sizeof(int **));
+		if (rotatedLeftPixels == NULL) {
+			perror("Malloc error");
+			exit(1);
+		}
+		for (int i = 0; i < width; ++i) {
+			rotatedLeftPixels[i] = malloc(height * sizeof(int *));
+			if (rotatedLeftPixels[i] == NULL) {
+				perror("Malloc error");
+			}
+			for (int j = 0; j < height; ++j) {
+				rotatedLeftPixels[i][j] = malloc(sizeof(int));
+				if (rotatedLeftPixels[i][j] == NULL) {
+					perror("Malloc error");
+				}
+			}
+		}
+
+		for (int i = 0; i < height; ++i) {
+			for (int j = 0; j < width; ++j) {
+				for (int k = 0; k < 3; ++k) {
+					rotatedLeftPixels[width-j-1][i][k] = pixels[i][j][k];
+				}
+			}
+		}
+
+		fprintf(stdout, "P3\n");
+		fprintf(stdout, "%i %i\n", height, width);
+		fprintf(stdout, "%i\n", maxValue);
+		for (int i = 0; i < width; ++i) {
+			for (int j = 0; j < height; ++j) {
+				for (int k = 0; k < 3; ++k) {
+					fprintf(stdout, "%i ", rotatedLeftPixels[i][j][k]);
+				}
+			}
+		}
+	}
+	if (strcmp(argv[2], "-red") == 0) {
+		for (int i = 0; i < height; ++i) {
+			for (int j = 0; j < width; ++j) {
+				pixels[i][j][1] = 0;
+				pixels[i][j][2] = 0;
+			}
+		}
+		printPixels(pixels);
+	}
+	if (strcmp(argv[2], "-green") == 0) {
+		for (int i = 0; i < height; ++i) {
+			for (int j = 0; j < width; ++j) {
+				pixels[i][j][0] = 0;
+				pixels[i][j][2] = 0;
+			}
+		}
+		printPixels(pixels);
+	}
+	if (strcmp(argv[2], "-blue") == 0) {
+		for (int i = 0; i < height; ++i) {
+			for (int j = 0; j < width; ++j) {
+				pixels[i][j][0] = 0;
+				pixels[i][j][1] = 0;
+			}
+		}
+		printPixels(pixels);
+	}
+	if (strcmp(argv[2], "-C") == 0) {
+		float contrastPercentage = atof(argv[3]);
+		for (int i = 0; i < height; ++i) {
+			for (int j = 0; j < width; ++j) {
+				for (int k = 0; k < 3; ++k) {
+					if (pixels[i][j][k] <= (maxValue/2)) {
+						pixels[i][j][k] -= (maxValue * contrastPercentage);
+					} else {
+						pixels[i][j][k] += (maxValue * contrastPercentage);
+					}
+				}
+			}
+		}
+		printPixels(pixels);
 	}
 
 	//DONT FORGET TO FREE THOSE MOTHERFUCKERS PLEASE
